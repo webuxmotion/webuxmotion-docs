@@ -1,0 +1,419 @@
+# Styles
+
+```shell copy
+yarn add -D tw-colors
+```
+
+```ts filename="/tailwind.config.ts" copy
+import type { Config } from "tailwindcss";
+import { createThemes } from "tw-colors";
+import colors from "tailwindcss/colors";
+
+const baseColors = [
+  "gray",
+  "red",
+  "yellow",
+  "green",
+  "blue",
+  "indigo",
+  "purple",
+  "pink",
+];
+
+const shadeMapping = {
+  "50": "900",
+  "100": "800",
+  "200": "700",
+  "300": "600",
+  "400": "500",
+  "500": "400",
+  "600": "300",
+  "700": "200",
+  "800": "100",
+  "900": "50",
+};
+
+const generateThemeObject = (colors: any, mapping: any, invert = false) => {
+  const theme: any = {};
+  baseColors.forEach((color) => {
+    theme[color] = {};
+    Object.entries(mapping).forEach(([key, value]: any) => {
+      const shadeKey = invert ? value : key;
+      theme[color][key] = colors[color][shadeKey];
+    });
+  });
+  return theme;
+};
+
+const lightTheme = generateThemeObject(colors, shadeMapping);
+const darkTheme = generateThemeObject(colors, shadeMapping, true);
+
+const themes = {
+  light: {
+    ...lightTheme,
+    white: "#ffffff",
+  },
+  dark: {
+    ...darkTheme,
+    white: colors.gray["950"],
+    black: colors.gray["50"],
+  },
+};
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic":
+          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      },
+    },
+  },
+  plugins: [createThemes(themes)],
+};
+
+export default config;
+```
+
+```css filename="/src/app/globals.css" copy
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  height: 100%;
+  width: 100%;
+  @apply text-sm bg-gray-500 text-gray-900;
+}
+```
+
+```tsx filename="/src/app/page.tsx" copy
+import Dashboard from "@/app/dashboard/page";
+
+export default function Home() {
+  return (
+    <Dashboard />
+  );
+}
+```
+
+### Create folder "/src/app/dashboard/"
+
+### Create file "/src/app/dashboard/page.tsx"
+
+```tsx filename="/src/app/dashboard/page.tsx" copy
+import React from 'react'
+
+const Dashboard = () => {
+  return (
+    <div>Dashboard</div>
+  )
+}
+
+export default Dashboard
+```
+
+```tsx filename="/src/app/layout.tsx" copy
+import type { Metadata } from "next";
+import localFont from "next/font/local";
+import "./globals.css";
+import DashboardWrapper from "./DashboardWrapper";
+
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+});
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
+
+export const metadata: Metadata = {
+  title: "xantory-admin",
+  description: "Xantory Admin Dashboard",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <DashboardWrapper>{children}</DashboardWrapper>
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx filename="/src/app/DashboardWrapper.tsx" copy
+import React from 'react'
+import Navbar from '@/app/(components)/Navbar';
+import Sidebar from '@/app/(components)/Sidebar';
+
+const DashboardWrapper = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div
+      className={`light flex bg-gray-50 text-gray-900 w-full min-h-screen`}
+    >
+      <Sidebar />
+      <main
+        className={`flex flex-col w-full h-full py-7 px-9 bg-gray-50 md:pl-24`}
+      >
+        <Navbar />
+        {children}
+      </main>
+    </div>
+  )
+}
+
+export default DashboardWrapper
+```
+
+### Create folder "/src/app/(components)/"
+### Create folder "/src/app/(components)/Navbar/"
+### Create folder "/src/app/(components)/Sidebar"
+
+### Create file "/src/app/(components)/Navbar/index.tsx"
+
+```tsx filename="/src/app/(components)/Navbar/index.tsx" copy
+"use client"
+
+import { Bell, Menu, Settings, Sun } from 'lucide-react'
+import Link from 'next/link'
+import React from 'react'
+
+const Navbar = () => {
+  const toggleSidebar = () => {
+
+  }
+
+  const toggleDarkMode = () => {
+
+  }
+
+  return (
+    <div className="flex justify-between items-center w-full mb-7">
+      {/* LEFT SIDE */}
+      <div className="flex justify-between items-center gap-5">
+        <button
+          className="px-3 py-3 bg-gray-100 rounded-full hover:bg-blue-100"
+          onClick={toggleSidebar}
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
+        <div className="relative">
+          <input
+            type="search"
+            placeholder="Start type to search groups & products"
+            className="pl-10 pr-4 py-2 w-50 md:w-60 border-2 border-gray-300 bg-white rounded-lg focus:outline-none focus:border-blue-500"
+          />
+
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-non">
+            <Bell className="text-gray-500" size={20} />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="flex justify-between items-center gap-5">
+        <div className="hidden md:flex justify-between items-center gap-5">
+          <div>
+            <button onClick={toggleDarkMode}>
+              <Sun className="cursor-pointer text-gray-500" size={24} />
+            </button>
+          </div>
+          <div className="relative">
+            <Bell className="cursor-pointer text-gray-500" size={24} />
+            <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-[0.4rem] py-1 text-xs font-semibold leading-none text-red-100 bg-red-400 rounded-full">
+              3
+            </span>
+          </div>
+          <hr className="w-0 h-7 border border-solid border-l border-gray-300 mx-3" />
+          <div className="flex items-center gap-3 cursor-pointer">
+            img
+            <span className="font-semibold">Ed Roh</span>
+          </div>
+        </div>
+        <Link href="/settings">
+          <Settings className="cursor-pointer text-gray-500" size={24} />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+export default Navbar
+```
+
+### Create file "/src/app/(components)/Sidebar/index.tsx"
+
+```tsx filename="/src/app/(components)/Sidebar/index.tsx" copy
+"use client";
+
+import {
+  Archive,
+  CircleDollarSign,
+  Clipboard,
+  Layout,
+  LucideIcon,
+  Menu,
+  SlidersHorizontal,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React from "react";
+
+interface SidebarLinkProps {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  isCollapsed: boolean;
+}
+
+const SidebarLink = ({
+  href,
+  icon: Icon,
+  label,
+  isCollapsed,
+}: SidebarLinkProps) => {
+  const pathname = usePathname();
+  const isActive =
+    pathname === href || (pathname === "/" && href === "/dashboard");
+
+  return (
+    <Link href={href}>
+      <div
+        className={`cursor-pointer flex items-center ${
+          isCollapsed ? "justify-center py-4" : "justify-start px-8 py-4"
+        }
+        hover:text-blue-500 hover:bg-blue-100 gap-3 transition-colors ${
+          isActive ? "bg-blue-200 text-white" : ""
+        }
+      }`}
+      >
+        <Icon className="w-6 h-6 !text-gray-700" />
+
+        <span
+          className={`${
+            isCollapsed ? "hidden" : "block"
+          } font-medium text-gray-700`}
+        >
+          {label}
+        </span>
+      </div>
+    </Link>
+  );
+};
+
+const Sidebar = () => {
+
+  const toggleSidebar = () => {
+
+  };
+
+  const isSidebarCollapsed = false;
+
+  const sidebarClassNames = `fixed flex flex-col ${
+    isSidebarCollapsed ? "w-0 md:w-16" : "w-72 md:w-64"
+  } bg-white transition-all duration-300 overflow-hidden h-full shadow-md z-40`;
+
+  return (
+    <div className={sidebarClassNames}>
+      {/* TOP LOGO */}
+      <div
+        className={`flex gap-3 justify-between md:justify-normal items-center pt-8 ${
+          isSidebarCollapsed ? "px-5" : "px-8"
+        }`}
+      >
+        image
+        <h1
+          className={`${
+            isSidebarCollapsed ? "hidden" : "block"
+          } font-extrabold text-2xl`}
+        >
+          XANTORY
+        </h1>
+
+        <button
+          className="md:hidden px-3 py-3 bg-gray-100 rounded-full hover:bg-blue-100"
+          onClick={toggleSidebar}
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* LINKS */}
+      <div className="flex-grow mt-8">
+        <SidebarLink
+          href="/dashboard"
+          icon={Layout}
+          label="Dashboard"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/inventory"
+          icon={Archive}
+          label="Inventory"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/products"
+          icon={Clipboard}
+          label="Products"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/users"
+          icon={User}
+          label="Users"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/settings"
+          icon={SlidersHorizontal}
+          label="Settings"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/expenses"
+          icon={CircleDollarSign}
+          label="Expenses"
+          isCollapsed={isSidebarCollapsed}
+        />
+      </div>
+
+      {/* FOOTER */}
+      <div className={`${isSidebarCollapsed ? "hidden" : "block"} mb-10`}>
+        <p className="text-center text-xs text-gray-500">&copy; 2024 Xantory Admin</p>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
+```

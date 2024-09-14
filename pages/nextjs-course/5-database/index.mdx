@@ -1,0 +1,245 @@
+# Database
+
+![Database Diagram](./database-diagram.png)
+
+
+https://www.postgresql.org/download/
+
+https://www.pgadmin.org/download/
+
+![image](./register_server.png)
+![image](./enter-name.png)
+![image](./connection_save.png)
+![image](./create-database.png)
+
+Create folder server.
+
+Run commands:
+```shell
+cd server
+yarn init -y
+
+yarn add prisma @prisma/client
+
+npx prisma init
+cd prisma
+```
+
+Download images:
+
+https://github.com/ed-roh/inventory-management/tree/master/server/assets
+
+Download this files:
+
+https://github.com/ed-roh/inventory-management/tree/master/server/prisma/seedData
+
+and move this files to folder server/prisma/seedData
+
+```shell
+npx tsc --init
+yarn add -D ts-node typescript @types/node
+```
+
+```env filename="/server/.env" copy
+# Environment variables declared in this file are automatically made available to Prisma.
+# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+DATABASE_URL="postgresql://postgres:root@localhost:5432/mydb?schema=public"
+```
+
+Create file server/prisma/seed.ts
+
+```ts filename="server/prisma/seed.ts" copy
+import { PrismaClient } from "@prisma/client";
+import fs from "fs";
+import path from "path";
+const prisma = new PrismaClient();
+
+async function deleteAllData(orderedFileNames: string[]) {
+  const modelNames = orderedFileNames.map((fileName) => {
+    const modelName = path.basename(fileName, path.extname(fileName));
+    return modelName.charAt(0).toUpperCase() + modelName.slice(1);
+  });
+
+  for (const modelName of modelNames) {
+    const model: any = prisma[modelName as keyof typeof prisma];
+    if (model) {
+      await model.deleteMany({});
+      console.log(`Cleared data from ${modelName}`);
+    } else {
+      console.error(
+        `Model ${modelName} not found. Please ensure the model name is correctly specified.`
+      );
+    }
+  }
+}
+
+async function main() {
+  const dataDirectory = path.join(__dirname, "seedData");
+
+  const orderedFileNames = [
+    "products.json",
+    "expenseSummary.json",
+    "sales.json",
+    "salesSummary.json",
+    "purchases.json",
+    "purchaseSummary.json",
+    "users.json",
+    "expenses.json",
+    "expenseByCategory.json",
+  ];
+
+  await deleteAllData(orderedFileNames);
+
+  for (const fileName of orderedFileNames) {
+    const filePath = path.join(dataDirectory, fileName);
+    const jsonData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    const modelName = path.basename(fileName, path.extname(fileName));
+    const model: any = prisma[modelName as keyof typeof prisma];
+
+    if (!model) {
+      console.error(`No Prisma model matches the file name: ${fileName}`);
+      continue;
+    }
+
+    for (const data of jsonData) {
+      await model.create({
+        data,
+      });
+    }
+
+    console.log(`Seeded ${modelName} with data from ${fileName}`);
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+```json filename="/server/tsconfig.json" copy
+...
+// change this:
+"module": "commonjs",
+// into this:
+"module": "nodenext", 
+...
+// change this:
+// "moduleResolution": "node10",   
+// into this:
+"moduleResolution": "nodenext",   
+...
+// change this:
+// "resolveJsonModule": true,
+// into this:
+"resolveJsonModule": true,
+...
+// change this:
+// "outDir": "./",
+// into this:
+"outDir": "./dist",
+...
+```
+
+```prisma filename="/server/prisma/schema.prisma" copy
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  userId String @id
+  name   String
+  email  String
+}
+
+model Products {
+  productId     String      @id
+  name          String
+  price         Float
+  rating        Float?
+  stockQuantity Int
+  Sales         Sales[]
+  Purchases     Purchases[]
+}
+
+model Sales {
+  saleId      String   @id
+  productId   String
+  timestamp   DateTime
+  quantity    Int
+  unitPrice   Float
+  totalAmount Float
+  product     Products @relation(fields: [productId], references: [productId])
+}
+
+model Purchases {
+  purchaseId String   @id
+  productId  String
+  timestamp  DateTime
+  quantity   Int
+  unitCost   Float
+  totalCost  Float
+  product    Products @relation(fields: [productId], references: [productId])
+}
+
+model Expenses {
+  expenseId String   @id
+  category  String
+  amount    Float
+  timestamp DateTime
+}
+
+model SalesSummary {
+  salesSummaryId   String   @id
+  totalValue       Float
+  changePercentage Float?
+  date             DateTime
+}
+
+model PurchaseSummary {
+  purchaseSummaryId String   @id
+  totalPurchased    Float
+  changePercentage  Float?
+  date              DateTime
+}
+
+model ExpenseSummary {
+  expenseSummaryId  String              @id
+  totalExpenses     Float
+  date              DateTime
+  ExpenseByCategory ExpenseByCategory[]
+}
+
+model ExpenseByCategory {
+  expenseByCategoryId String         @id
+  expenseSummaryId    String
+  category            String
+  amount              BigInt
+  date                DateTime
+  expenseSummary      ExpenseSummary @relation(fields: [expenseSummaryId], references: [expenseSummaryId])
+}
+```
+
+```shell copy
+npx prisma generate
+npx prisma migrate dev --name init
+yarn seed
+```

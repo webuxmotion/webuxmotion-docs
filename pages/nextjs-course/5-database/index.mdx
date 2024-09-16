@@ -33,7 +33,7 @@ Run commands:
 cd server
 yarn init -y
 
-yarn add prisma @prisma/client
+yarn add prisma @prisma/client dotenv
 
 npx prisma init
 cd prisma
@@ -250,6 +250,17 @@ model ExpenseByCategory {
   date                DateTime
   expenseSummary      ExpenseSummary @relation(fields: [expenseSummaryId], references: [expenseSummaryId])
 }
+```
+
+Add script to server/package.json file
+
+```json filename="server/package.json"
+...
+"scripts": {
+  "seed": "ts-node prisma/seed.ts"
+},
+...
+
 ```
 
 ```shell copy

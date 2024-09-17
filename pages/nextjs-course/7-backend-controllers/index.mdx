@@ -1,2 +1,101 @@
 # Backend Controllers
 
+### Create file /server/src/controllers/dashboardController.ts
+
+```ts filename="/server/src/controllers/dashboardController.ts" copy
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export const getDashboardMetrics = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const popularProducts = await prisma.products.findMany({
+      take: 15,
+      orderBy: {
+        stockQuantity: "desc",
+      },
+    });
+    const salesSummary = await prisma.salesSummary.findMany({
+      take: 5,
+      orderBy: {
+        date: "desc",
+      },
+    });
+    const purchaseSummary = await prisma.purchaseSummary.findMany({
+      take: 5,
+      orderBy: {
+        date: "desc",
+      },
+    });
+    const expenseSummary = await prisma.expenseSummary.findMany({
+      take: 5,
+      orderBy: {
+        date: "desc",
+      },
+    });
+    const expenseByCategorySummaryRaw = await prisma.expenseByCategory.findMany(
+      {
+        take: 5,
+        orderBy: {
+          date: "desc",
+        },
+      }
+    );
+    const expenseByCategorySummary = expenseByCategorySummaryRaw.map(
+      (item) => ({
+        ...item,
+        amount: item.amount.toString(),
+      })
+    );
+
+    res.json({
+      popularProducts,
+      salesSummary,
+      purchaseSummary,
+      expenseSummary,
+      expenseByCategorySummary,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving dashboard metrics" });
+  }
+};
+```
+
+### Create file /server/src/routes/dashboardRoutes.ts
+
+```ts filename="/server/src/routes/dashboardRoutes.ts" copy
+import { Router } from "express";
+import { getDashboardMetrics } from "../controllers/dashboardController";
+
+const router = Router();
+
+router.get("/", getDashboardMetrics);
+
+export default router;
+```
+
+### Use dashboardRoutes in this file:
+
+```ts filename="/server/src/index.ts"
+// ...
+/* ROUTE IMPORTS */
+import dashboardRoutes from "./routes/dashboardRoutes";
+// ...
+/* ROUTES */
+app.use("/dashboard", dashboardRoutes); // http://localhost:8000/dashboard
+// ...
+```
+
+### Run this command in folder /server
+
+```shell copy
+yarn dev
+```
+
+### Open this url in browser and see the data:
+
+http://localhost:8000/dashboard
